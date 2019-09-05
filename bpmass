@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# Automatically tag a folder of music with an auto-detected tempo in BPM
+# Usage: ./bpmass
+# With no arguments, searches for tracks in the current folder and attempts to tag them
+# Tracks that already have a BPM set will not have it overwritten
+
+SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+
+# Minimum and maximum BPM to be detected:
+MIN=40
+MAX=350
+
+# Don't process the same files twice
+if [ -f .alreadyprocessed ]; then
+	echo "BPMs already determined in this folder"
+	exit 1
+else
+	touch .alreadyprocessed
+	echo "`pwd`" >> ~/.auto-bpm-alreadyprocessed
+fi
+
+# Any extra options to pass to bpm-tools
+# (e.g. -n for dry run, -f to overwrite existing BPM tag)
+OPTIONS=""
+
+#which bpm-tag >/dev/null || {
+#	echo "ERROR: Please install 'bpm-tools' (http://www.pogo.org.uk/~mark/bpm-tools/)"
+ # exit 1
+#	} # Check for bpm-tools
+
+which sox >/dev/null || {
+	echo "ERROR: Please install 'sox' (opus support required)"
+  exit 1
+	} # Check for sox
+
+sox --help | grep "AUDIO FILE FORMATS" | grep "opus" >/dev/null
+if [ "$?" != "0" ]; then
+  echo "WARNING: sox may not be compiled with mp3 support"
+fi
+
+which ffmpeg >/dev/null || {
+	echo "ERROR: Please install 'ffmpeg'"
+  exit 1
+	} # Check for ffmpeg
+
+
+# Enumerate audio files in the current directory
+find ./ | grep '\.opus$\|\.mp3$\|\.mp4$\|\.m4a$\|\.wav$\|\.pcm$\|\.aif$\|\.aiff$\|\.aac$\|\.ogg$\|\.wma$\|\.flac$\|\.alac$' > /dev/null 2>&1
+if [ "$?" != "0" ]; then
+  echo "The current directory must contain the audio files to process."
+  exit 1
+fi
+
+# Process all MP3 and OPUS files (this is easy)
+find ./ | grep '\.opus$|\.mp3$' > /dev/null 2>&1
+if [ "$?" = "0" ]; then
+  for f in *.opus *.mp3; do
+   exec $SCRIPTPATH/bpm-tools/bpm-tag "$f"
+  done
+fi
+
