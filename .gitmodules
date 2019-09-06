@@ -1,0 +1,3 @@
+[submodule "opuscomment"]
+	path = opuscomment
+	url = https://github.com/hcmiya/opuscomment.git
